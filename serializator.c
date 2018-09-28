@@ -28,6 +28,7 @@ static inline struct Buffer* create_buffer(unsigned int inital_count)
         return  0;
     }
 
+    memset(bf->data, 0, inital_count * sizeof (char));
     bf->Count = inital_count;
     bf->next = 0;
 
@@ -39,11 +40,10 @@ static inline void request_mem(struct Buffer* buffer, size_t size)
 {
     if (!buffer)
         return;
-    if (size + buffer->next> buffer->Count)
+    if ((size + buffer->next) > buffer->Count)
     {
-        buffer->Count = size;
-        buffer->data = realloc(buffer->data, buffer->Count * 2);
-        buffer->Count *= 2;
+        buffer->Count = size * 2;
+        buffer->data = realloc(buffer->data, buffer->Count);
     }
 }
 
@@ -54,7 +54,7 @@ struct Serializator* InitSerializator(void)
         return  0;
 
 
-    sr->_prv = create_buffer(64);
+    sr->_prv = create_buffer(1024);
     if (!sr->_prv)
     {
         free(sr);
@@ -74,6 +74,23 @@ void SerializeInt(struct Serializator* _this, int value)
     memcpy( ((char*)(_this->_prv->data)) + _this->_prv->next, &value, sizeof(int));
     _this->_prv->next += sizeof(int);
 }
+
+
+extern void WriteHeader(struct Serializator* ser)
+{
+    if (!ser)
+        return;
+
+
+    printf("%d Count, %d next \r\n", ser->_prv->Count, ser->_prv->next);
+
+    static char hdr[256] ;
+    sprintf_s(hdr, sizeof (hdr), "Name : %s\r\nfield %d; type %s\r\n", "Test", "int");
+    request_mem(ser->_prv, sizeof(hdr));
+    memcpy(((char*)ser->_prv->data), hdr, strlen(hdr));
+    ser->_prv->next += sizeof (hdr);
+}
+
 
 
 void TestOUT(struct Serializator* _this, const char* fname)
@@ -96,14 +113,16 @@ void TestIN(const char* fname)
     if (!fp)
         return;
 
-    int* data = (int*)calloc(10, sizeof(int));
+    int* data = (int*)calloc(10+256, sizeof(int));
 
-    fread(data, sizeof(int), 10, fp);
+    fread(data, sizeof(int), 10+256, fp);
+
+    int* iData = data+256;
 
     int i;
     for(i=0; i < 10; ++i)
     {
-        printf("%d\r\n", data[i]);
+        printf("%d\r\n", iData[i]);
     }
 
     fclose(fp);

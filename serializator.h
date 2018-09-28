@@ -10,6 +10,7 @@ struct Serializator
 
 
 extern struct Serializator* InitSerializator(void);
+extern void WriteHeader(struct Serializator*);
 extern void SerializeInt(struct Serializator* _this, int value);
 extern void TestOUT(struct Serializator* _this, const char* fname);
 extern void TestIN(const char* fname);
